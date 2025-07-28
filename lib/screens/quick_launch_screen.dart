@@ -2,9 +2,69 @@ import 'package:flutter/material.dart';
 import '../widgets/department_card.dart';
 import 'call_statistics_screen.dart';
 import '../widgets/loading_animation.dart';
+import '../services/api_service.dart';
+import 'auth/login_screen.dart';
 
-class QuickLaunchScreen extends StatelessWidget {
+class QuickLaunchScreen extends StatefulWidget {
   const QuickLaunchScreen({Key? key}) : super(key: key);
+
+  @override
+  State<QuickLaunchScreen> createState() => _QuickLaunchScreenState();
+}
+
+class _QuickLaunchScreenState extends State<QuickLaunchScreen> {
+  String? _username;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserInfo();
+  }
+
+  Future<void> _loadUserInfo() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final username = await ApiService.getCurrentUsername();
+      setState(() {
+        _username = username;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _logout() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      await ApiService.logout();
+      
+      if (!mounted) return;
+      
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
+      );
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to logout. Please try again.'),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,97 +100,111 @@ class QuickLaunchScreen extends StatelessWidget {
     ];
 
     return Scaffold(
-      body: Row(
-        children: [
-          // Left sidebar with day letters
-          // _buildLeftSidebar(),
-          
-          // Main content area
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeader(context),
-                Expanded(
-                  child: ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                    itemCount: departments.length,
-                    itemBuilder: (context, index) {
-                      final department = departments[index];
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // if (index == 0 || index == 2)
-                            //   _buildTimeIndicator(department['time'] as String),
-                            DepartmentCard(
-                              name: department['name'] as String,
-                              description: department['description'] as String,
-                              time: department['time'] as String,
-                              color: department['color'] as Color,
-                              people: department['people'] as List<String>,
-                              onTap: () => _handleDepartmentTap(context, department),
+      body: _isLoading 
+        ? const Center(child: CircularProgressIndicator())
+        : Column(
+            children: [
+              // User info and logout bar
+              _buildUserBar(context),
+              
+              // Main content
+              Expanded(
+                child: Row(
+                  children: [
+                    // Main content area
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildHeader(context),
+                          Expanded(
+                            child: ListView.builder(
+                              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                              itemCount: departments.length,
+                              itemBuilder: (context, index) {
+                                final department = departments[index];
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 16.0),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      DepartmentCard(
+                                        name: department['name'] as String,
+                                        description: department['description'] as String,
+                                        time: department['time'] as String,
+                                        color: department['color'] as Color,
+                                        people: department['people'] as List<String>,
+                                        onTap: () => _handleDepartmentTap(context, department),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
                             ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
-  Widget _buildLeftSidebar() {
+  Widget _buildUserBar(BuildContext context) {
     return Container(
-      width: 48,
-      color: const Color(0xFF1E1E1E),
-      child: Column(
-        children: [
-          const SizedBox(height: 80),
-          _buildDayButton('M', false),
-          _buildDayButton('T', true),
-          _buildDayButton('W', false),
-          _buildDayButton('T', false),
-          _buildDayButton('F', false),
-          const SizedBox(height: 12),
-          const Divider(color: Color(0xFF4A4A4A), height: 1, thickness: 1),
-          const SizedBox(height: 12),
-          _buildDayButton('S', false),
-          _buildDayButton('S', false),
-          const Spacer(),
-          IconButton(
-            icon: const Icon(Icons.settings, color: Color(0xFF888888)),
-            onPressed: () {},
-          ),
-          const SizedBox(height: 20),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDayButton(String day, bool isSelected) {
-    return Container(
-      width: 32,
-      height: 32,
-      margin: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
       decoration: BoxDecoration(
-        color: isSelected ? const Color(0xFFFFD700) : Colors.transparent,
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Center(
-        child: Text(
-          day,
-          style: TextStyle(
-            color: isSelected ? Colors.black : const Color(0xFF888888),
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
+        color: const Color(0xFF1E3A8A),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
           ),
+        ],
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Row(
+          children: [
+            CircleAvatar(
+              backgroundColor: Colors.white,
+              child: Text(
+                _username?.isNotEmpty == true ? _username![0].toUpperCase() : 'U',
+                style: const TextStyle(
+                  color: Color(0xFF1E3A8A),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Welcome, ${_username ?? 'User'}',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            ElevatedButton.icon(
+              onPressed: _logout,
+              icon: const Icon(Icons.logout, size: 18),
+              label: const Text('Logout'),
+              style: ElevatedButton.styleFrom(
+                foregroundColor: const Color(0xFF1E3A8A),
+                backgroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -144,46 +218,8 @@ class QuickLaunchScreen extends StatelessWidget {
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                '',
-                style: TextStyle(
-                  color: Color(0xFF888888),
-                  fontWeight: FontWeight.w500,
-                ),
-              )
-              // IconButton(
-              //   icon: const Icon(Icons.grid_view, color: Color(0xFF333333)),
-              //   onPressed: () {},
-              //   padding: EdgeInsets.zero,
-              //   constraints: const BoxConstraints(),
-              // ),
-            ],
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // const Column(
-              //   crossAxisAlignment: CrossAxisAlignment.start,
-              //   children: [
-              //     Text(
-              //       'Aug 20',
-              //       style: TextStyle(
-              //         color: Color(0xFF888888),
-              //         fontWeight: FontWeight.w500,
-              //       ),
-              //     ),
-              //     Text(
-              //       '18',
-              //       style: TextStyle(
-              //         fontSize: 36,
-              //         fontWeight: FontWeight.bold,
-              //       ),
-              //     ),
-              //   ],
-              // ),
-              const SizedBox(width: 0),
               Expanded(
                 child: Text(
                   'Quick Launch',
@@ -194,23 +230,14 @@ class QuickLaunchScreen extends StatelessWidget {
               ),
             ],
           ),
+          const SizedBox(height: 8),
+          Text(
+            'Select a department to make a call',
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: Colors.grey[600],
+                ),
+          ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildTimeIndicator(String time) {
-    final startTime = time.split(' - ')[0];
-    
-    return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 8),
-      child: Text(
-        startTime,
-        style: const TextStyle(
-          color: Color(0xFF888888),
-          fontWeight: FontWeight.w500,
-          fontSize: 12,
-        ),
       ),
     );
   }
