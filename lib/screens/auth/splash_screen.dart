@@ -11,9 +11,10 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
+class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMixin {
   late AnimationController _animationController;
   bool _isAnimationCompleted = false;
+  bool _isAnimationLoaded = false;
 
   @override
   void initState() {
@@ -72,19 +73,29 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
             ),
             const SizedBox(height: 40),
             
-            // Rocket animation
+            // Rocket animation or placeholder
             SizedBox(
               height: 300,
               width: 300,
-              child: Lottie.asset(
-                'assets/animations/rocket_launch.json',
-                controller: _animationController,
-                onLoaded: (composition) {
-                  _animationController
-                    ..duration = composition.duration
-                    ..forward();
-                },
-              ),
+              child: _isAnimationLoaded 
+                ? Lottie.asset(
+                    'assets/animations/rocket_launch.json',
+                    controller: _animationController,
+                    onLoaded: (composition) {
+                      setState(() {
+                        _isAnimationLoaded = true;
+                      });
+                      _animationController
+                        ..duration = composition.duration
+                        ..forward();
+                    },
+                  )
+                : Container(
+                    color: Colors.transparent,
+                    child: const Center(
+                      child: CircularProgressIndicator(color: Colors.white),
+                    ),
+                  ),
             ),
             
             const SizedBox(height: 40),
