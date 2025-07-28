@@ -12,6 +12,8 @@ dependencies:
   fl_chart: ^0.63.0  # Updated to latest version
   lottie: ^2.7.0
   shared_preferences: ^2.2.2
+  http: ^1.1.0  # For API requests
+  flutter_secure_storage: ^8.0.0  # For securely storing auth tokens
 
 dev_dependencies:
   flutter_test:
