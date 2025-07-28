@@ -15,41 +15,83 @@ class QuickLaunchScreen extends StatefulWidget {
 class _QuickLaunchScreenState extends State<QuickLaunchScreen> {
   String? _username;
   bool _isLoading = true;
+  List<Map<String, dynamic>> _departments = []; // To store fetched department data
 
   @override
   void initState() {
     super.initState();
+    print("Test");
     _loadUserInfo();
   }
 
+  // Fetch user information and department data
   Future<void> _loadUserInfo() async {
     setState(() {
       _isLoading = true;
     });
 
     try {
-      final username = await ApiService.getCurrentUsername();
+      print("Test22");
+      final username = await ApiService
+          .getCurrentUsername(); // Get the username
+
+      // Fetch department data
+      final response = await ApiService.fetchData(
+          "department?name=&limit=3000&start=0&includeDisabled=true&includeQuickLaunch=true");
+
+      print("Test adsadsa ${response['departments'].length > 0}");
+
+      if (response['departments'].length > 0) {
+        List<dynamic> departmentsData = response['departments']; // Extract the department list
+        print("Test ${departmentsData}");
+
+        // Map the department data into your desired structure
+        setState(() {
+          _departments = departmentsData
+              .where((department) => department['isQuickLaunch'] == true)
+              .map((department) {
+            return {
+              'departmentID': department['departmentID'],
+              'clientID': department['clientID'],
+              'clientType': department['clientType'],
+              'name': department['name'],
+              'type': department['type'],
+              'isEnabled': department['isEnabled'],
+              'isDeleted': department['isDeleted'],
+              'color': department['color'],
+              'isQuickLaunch': department['isQuickLaunch'],
+              'order': department['order'],
+            };
+          }).toList();
+          _isLoading = false;
+        });
+        print("Test13213213 ${_departments}");
+
+      } else {
+        print("Test No departments data available in the response.");
+      }
+      print("Test Fetched departments: $_departments");
+    }
+    catch (e) {
       setState(() {
-        _username = username;
         _isLoading = false;
       });
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
+      // Handle error (optional: show a message to the user)
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to load data')),
+      );
     }
   }
 
+  // Logout function
   Future<void> _logout() async {
     setState(() {
       _isLoading = true;
     });
 
     try {
-      await ApiService.logout();
-      
+      await ApiService.logout(); // Your logout logic here
       if (!mounted) return;
-      
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (context) => const LoginScreen()),
       );
@@ -57,7 +99,6 @@ class _QuickLaunchScreenState extends State<QuickLaunchScreen> {
       setState(() {
         _isLoading = false;
       });
-      
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Failed to logout. Please try again.'),
@@ -68,91 +109,61 @@ class _QuickLaunchScreenState extends State<QuickLaunchScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final departments = [
-      {
-        'name': 'All Employees',
-        'description': 'Total Count: 5360',
-        'time': '',
-        'color': const Color(0xFF47B5FF),
-        'people': ['Andre Torres', 'Edouard Dufils', 'Sophie Wang Yu'],
-      },
-      {
-        'name': 'IT',
-        'description': 'Total Count: 347',
-        'time': '',
-        'color': const Color(0xFFFFA500),
-        'people': ['Andre Torres', 'You'],
-      },
-      {
-        'name': 'Communications',
-        'description': 'Total Count: 173',
-        'time': '',
-        'color': const Color(0xFFAA77FF),
-        'people': ['Freya Collins', 'You'],
-      },
-      {
-        'name': 'HR',
-        'description': 'Total Count: 1473',
-        'time': '',
-        'color': const Color(0xFFE9A8FF),
-        'people': ['You'],
-      },
-    ];
-
     return Scaffold(
-      body: _isLoading 
-        ? const Center(child: CircularProgressIndicator())
-        : Column(
-            children: [
-              // User info and logout bar
-              _buildUserBar(context),
-              
-              // Main content
-              Expanded(
-                child: Row(
-                  children: [
-                    // Main content area
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildHeader(context),
-                          Expanded(
-                            child: ListView.builder(
-                              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                              itemCount: departments.length,
-                              itemBuilder: (context, index) {
-                                final department = departments[index];
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 16.0),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      DepartmentCard(
-                                        name: department['name'] as String,
-                                        description: department['description'] as String,
-                                        time: department['time'] as String,
-                                        color: department['color'] as Color,
-                                        people: department['people'] as List<String>,
-                                        onTap: () => _handleDepartmentTap(context, department),
-                                      ),
-                                    ],
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
+        children: [
+          // User info and logout bar
+          _buildUserBar(context),
+
+          // Main content
+          Expanded(
+            child: Row(
+              children: [
+                // Main content area
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildHeader(context),
+                      Expanded(
+                        child: ListView.builder(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                          itemCount: _departments.length, // Use the fetched data
+                          itemBuilder: (context, index) {
+                            final department = _departments[index];
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 16.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  DepartmentCard(
+                                    name: department['name'] as String,
+                                    description: 'Total Count: ${department['order']}', // Example description
+                                    time: '', // You can replace with actual time if needed
+                                    color: Color(int.parse(department['color'].replaceAll('#', '0xff'))),
+                                    people: ['John Doe', 'Jane Smith'], // Example people, adjust based on your data
+                                    onTap: () => _handleDepartmentTap(context, department),
                                   ),
-                                );
-                              },
-                            ),
-                          ),
-                        ],
+                                ],
+                              ),
+                            );
+                          },
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
+        ],
+      ),
     );
   }
 
+  // User info and logout bar
   Widget _buildUserBar(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
@@ -210,6 +221,7 @@ class _QuickLaunchScreenState extends State<QuickLaunchScreen> {
     );
   }
 
+  // Header Section
   Widget _buildHeader(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(24.0),
@@ -224,8 +236,8 @@ class _QuickLaunchScreenState extends State<QuickLaunchScreen> {
                 child: Text(
                   'Quick Launch',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ],
@@ -234,14 +246,15 @@ class _QuickLaunchScreenState extends State<QuickLaunchScreen> {
           Text(
             'Select a department to make a call',
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Colors.grey[600],
-                ),
+              color: Colors.grey[600],
+            ),
           ),
         ],
       ),
     );
   }
 
+  // Handle department tap
   void _handleDepartmentTap(BuildContext context, Map<String, dynamic> department) {
     // Show loading animation
     showDialog(
@@ -253,7 +266,7 @@ class _QuickLaunchScreenState extends State<QuickLaunchScreen> {
     // Simulate loading time
     Future.delayed(const Duration(seconds: 3), () {
       Navigator.pop(context); // Close loading dialog
-      
+
       // Navigate to statistics screen
       Navigator.push(
         context,
