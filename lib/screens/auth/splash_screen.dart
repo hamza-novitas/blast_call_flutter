@@ -11,20 +11,23 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMixin {
-  late AnimationController _animationController;
-  late Animation<double> _backgroundColorAnimation;
+class _SplashScreenState extends State<SplashScreen>
+    with TickerProviderStateMixin {
+  late final AnimationController _animationController;
+  late final Animation<Color?> _backgroundColorAnimation;
   bool _isAnimationCompleted = false;
   bool _isAnimationLoaded = false;
 
   @override
   void initState() {
     super.initState();
+
+    // Initialize controller with vsync immediately
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 3),
     );
-    
+
     _backgroundColorAnimation = ColorTween(
       begin: const Color(0xFF1E3A8A),
       end: const Color(0xFF0F1F4A),
@@ -32,25 +35,25 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       parent: _animationController,
       curve: Curves.easeIn,
     ));
-    
+
     _checkAuthAndNavigate();
   }
 
   Future<void> _checkAuthAndNavigate() async {
     // Allow animation to run for a minimum time for better UX
     await Future.delayed(const Duration(milliseconds: 3000));
-    
+
     if (!mounted) return;
-    
+
     setState(() {
       _isAnimationCompleted = true;
     });
-    
+
     // Check if user is already logged in
     final isLoggedIn = await ApiService.isLoggedIn();
-    
+
     if (!mounted) return;
-    
+
     // Navigate to appropriate screen
     if (isLoggedIn) {
       Navigator.of(context).pushReplacement(
@@ -77,13 +80,13 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
         return Scaffold(
           backgroundColor: _backgroundColorAnimation.value,
           body: Container(
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  const Color(0xFF1E3A8A),
-                  const Color(0xFF0F1F4A),
+                  Color(0xFF1E3A8A),
+                  Color(0xFF0F1F4A),
                 ],
               ),
             ),
@@ -122,46 +125,48 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                         ),
                       ),
                     ),
-                    
+
                     const SizedBox(height: 60),
-                    
-                    // Rocket animation
+
+                    // Rocket animation - Fixed implementation
                     Container(
                       height: 300,
                       width: 300,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(20),
                       ),
-                      child: _isAnimationLoaded 
-                        ? Lottie.asset(
-                            'assets/animations/rocket_launch_improved.json',
-                            controller: _animationController,
-                            onLoaded: (composition) {
-                              setState(() {
-                                _isAnimationLoaded = true;
+                      child: Lottie.asset(
+                        'assets/animations/rocket_launch_improved.json',
+                        controller: _animationController,
+                        onLoaded: (composition) {
+                          // Ensure widget is still mounted before updating state
+                          if (mounted) {
+                            setState(() {
+                              _isAnimationLoaded = true;
+                            });
+                            _animationController
+                              ..duration = composition.duration
+                              ..forward().whenComplete(() {
+                                if (mounted) {
+                                  setState(() {
+                                    _isAnimationCompleted = true;
+                                  });
+                                }
                               });
-                              _animationController
-                                ..duration = composition.duration
-                                ..forward();
-                            },
-                          )
-                        : Center(
-                            child: Lottie.asset(
-                              'assets/animations/rocket_launch.json',
-                              onLoaded: (composition) {
-                                setState(() {
-                                  _isAnimationLoaded = true;
-                                });
-                                _animationController
-                                  ..duration = composition.duration
-                                  ..forward();
-                              },
-                            ),
-                          ),
+                          }
+                        },
+                        // Add error builder to catch any issues with the animation
+                        errorBuilder: (context, error, stackTrace) {
+                          return const Center(
+                            child: Text('Failed to load animation',
+                                style: TextStyle(color: Colors.white)),
+                          );
+                        },
+                      ),
                     ),
-                    
+
                     const SizedBox(height: 50),
-                    
+
                     // Loading indicator with pulse animation
                     if (!_isAnimationCompleted)
                       _buildPulsingLoader()
@@ -181,10 +186,10 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
             ),
           ),
         );
-      }
+      },
     );
   }
-  
+
   Widget _buildPulsingLoader() {
     return TweenAnimationBuilder<double>(
       tween: Tween<double>(begin: 0.0, end: 1.0),
@@ -230,10 +235,10 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       },
     );
   }
-  
+
   Widget _buildDot(double animValue, double delay) {
     final double opacity = ((animValue + delay) % 1);
-    
+
     return Container(
       width: 8,
       height: 8,
