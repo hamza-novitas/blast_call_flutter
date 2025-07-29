@@ -53,7 +53,8 @@ class _QuickLaunchScreenState extends State<QuickLaunchScreen> {
               'isQuickLaunch': department['isQuickLaunch'],
               'order': department['order'],
             };
-          }).toList();
+          }).toList()
+            ..sort((a, b) => (a['order'] as int).compareTo(b['order'] as int));
           _isLoading = false;
         });
       } else {
@@ -66,38 +67,38 @@ class _QuickLaunchScreenState extends State<QuickLaunchScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Failed to load data')),
       );
-      this.setState(() {
-        _departments = [
-          {
-            'name': 'All Employees',
-            'description': 'Total Count: 5360',
-            'time': '',
-            'color': const Color(0xFF47B5FF),
-            'people': ['Andre Torres', 'Edouard Dufils', 'Sophie Wang Yu'],
-          },
-          {
-            'name': 'IT',
-            'description': 'Total Count: 347',
-            'time': '',
-            'color': const Color(0xFFFFA500),
-            'people': ['Andre Torres', 'You'],
-          },
-          {
-            'name': 'Communications',
-            'description': 'Total Count: 173',
-            'time': '',
-            'color': const Color(0xFFAA77FF),
-            'people': ['Freya Collins', 'You'],
-          },
-          {
-            'name': 'HR',
-            'description': 'Total Count: 1473',
-            'time': '',
-            'color': const Color(0xFFE9A8FF),
-            'people': ['You'],
-          },
-        ];
-      });
+      // this.setState(() {
+      //   _departments = [
+      //     {
+      //       'name': 'All Employees',
+      //       'description': 'Total Count: 5360',
+      //       'time': '',
+      //       'color': const Color(0xFF47B5FF),
+      //       'people': ['Andre Torres', 'Edouard Dufils', 'Sophie Wang Yu'],
+      //     },
+      //     {
+      //       'name': 'IT',
+      //       'description': 'Total Count: 347',
+      //       'time': '',
+      //       'color': const Color(0xFFFFA500),
+      //       'people': ['Andre Torres', 'You'],
+      //     },
+      //     {
+      //       'name': 'Communications',
+      //       'description': 'Total Count: 173',
+      //       'time': '',
+      //       'color': const Color(0xFFAA77FF),
+      //       'people': ['Freya Collins', 'You'],
+      //     },
+      //     {
+      //       'name': 'HR',
+      //       'description': 'Total Count: 1473',
+      //       'time': '',
+      //       'color': const Color(0xFFE9A8FF),
+      //       'people': ['You'],
+      //     },
+      //   ];
+      // });
     }
   }
 
@@ -155,9 +156,9 @@ class _QuickLaunchScreenState extends State<QuickLaunchScreen> {
                                     key: _cardKeys[index], // Assign the key
                                     name: department['name'] as String,
                                     description:
-                                        'Total Count: ${department['order']}',
+                                        '',
                                     time: '',
-                                    color: department['color'],
+                                    color: Color(int.parse(department['color'].replaceAll('#', '0xff'))),
                                     people: ['John Doe', 'Jane Smith'],
                                     onTap: () => _handleDepartmentTap(index),
                                   ),
@@ -282,10 +283,10 @@ class _QuickLaunchScreenState extends State<QuickLaunchScreen> {
     OverlayEntry? overlayEntry;
     overlayEntry = OverlayEntry(
       builder: (context) => RocketLaunchOverlay(
-        color: _departments[index]['color'],
+        color: Color(int.parse(_departments[index]['color'].replaceAll('#', '0xff'))),
         position: Offset(centerX, centerY),
         onAnimationComplete: () {
-          overlayEntry?.remove();
+          // overlayEntry?.remove();
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -300,7 +301,6 @@ class _QuickLaunchScreenState extends State<QuickLaunchScreen> {
         },
       ),
     );
-
     overlay.insert(overlayEntry);
   }
 }

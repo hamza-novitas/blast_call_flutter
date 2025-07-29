@@ -138,9 +138,10 @@ class _RocketLaunchOverlayState extends State<RocketLaunchOverlay>
                           'assets/animations/rocket_launch_improved.json',
                           controller: _controller,
                           onLoaded: (composition) {
-                            // Set duration from Lottie file
                             _controller.duration = composition.duration;
-                            _controller.forward(from: 0);
+                            _controller.forward(from: 0).whenComplete(() {
+                              widget.onAnimationComplete();
+                            });
                           },
                           fit: BoxFit.contain,
                           errorBuilder: (context, error, stackTrace) =>

@@ -41,44 +41,90 @@ class DepartmentCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Title + Chevron icon
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          name,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          description,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.white.withOpacity(0.9),
-                          ),
-                        ),
-                      ],
+                    child: Text(
+                      name,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                   const Icon(
                     Icons.chevron_right,
                     color: Colors.white,
+                    size: 20,
                   ),
                 ],
               ),
+
+              const SizedBox(height: 4),
+
+              // // Description
+              // Text(
+              //   description,
+              //   style: TextStyle(
+              //     fontSize: 14,
+              //     color: Colors.white.withOpacity(0.9),
+              //   ),
+              // ),
+              //
+              const SizedBox(height: 12),
+
+              // Buttons with divider
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () {
+                          // TODO: Handle Action 1
+                          print('Action 1 pressed TEST');
+                        },
+                        child: const Text(
+                          'Action 1',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                    ),
+                    Container(
+                      height: 40,
+                      width: 1,
+                      color: Colors.white.withOpacity(0.3),
+                    ),
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () {
+                          // TODO: Handle Action 2
+                          print('Action 2 pressed TEST');
+                        },
+                        child: const Text(
+                          'Action 2',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // People section (if present)
               if (people.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 _buildPeopleSection(),
               ],
             ],
           ),
+
         ),
       ),
     );
