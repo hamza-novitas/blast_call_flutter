@@ -1,3 +1,4 @@
+import 'package:blast_caller_app/widgets/rocket_launch_overlay.dart';
 import 'package:flutter/material.dart';
 import '../widgets/department_card.dart';
 import 'call_statistics_screen.dart';
@@ -13,39 +14,29 @@ class QuickLaunchScreen extends StatefulWidget {
 }
 
 class _QuickLaunchScreenState extends State<QuickLaunchScreen> {
+  final Map<int, GlobalKey> _cardKeys = {}; // Track keys for each card
   String? _username;
   bool _isLoading = true;
-  List<Map<String, dynamic>> _departments = []; // To store fetched department data
+  List<Map<String, dynamic>> _departments = [];
 
   @override
   void initState() {
     super.initState();
-    print("Test");
     _loadUserInfo();
   }
 
-  // Fetch user information and department data
   Future<void> _loadUserInfo() async {
     setState(() {
       _isLoading = true;
     });
 
     try {
-      print("Test22");
-      final username = await ApiService
-          .getCurrentUsername(); // Get the username
-
-      // Fetch department data
+      final username = await ApiService.getCurrentUsername();
       final response = await ApiService.fetchData(
           "department?name=&limit=3000&start=0&includeDisabled=true&includeQuickLaunch=true");
 
-      print("Test adsadsa ${response['departments'].length > 0}");
-
       if (response['departments'].length > 0) {
-        List<dynamic> departmentsData = response['departments']; // Extract the department list
-        print("Test ${departmentsData}");
-
-        // Map the department data into your desired structure
+        List<dynamic> departmentsData = response['departments'];
         setState(() {
           _departments = departmentsData
               .where((department) => department['isQuickLaunch'] == true)
@@ -65,32 +56,58 @@ class _QuickLaunchScreenState extends State<QuickLaunchScreen> {
           }).toList();
           _isLoading = false;
         });
-        print("Test13213213 ${_departments}");
-
       } else {
-        print("Test No departments data available in the response.");
+        print("No departments data available in the response.");
       }
-      print("Test Fetched departments: $_departments");
-    }
-    catch (e) {
+    } catch (e) {
       setState(() {
         _isLoading = false;
       });
-      // Handle error (optional: show a message to the user)
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Failed to load data')),
       );
+      this.setState(() {
+        _departments = [
+          {
+            'name': 'All Employees',
+            'description': 'Total Count: 5360',
+            'time': '',
+            'color': const Color(0xFF47B5FF),
+            'people': ['Andre Torres', 'Edouard Dufils', 'Sophie Wang Yu'],
+          },
+          {
+            'name': 'IT',
+            'description': 'Total Count: 347',
+            'time': '',
+            'color': const Color(0xFFFFA500),
+            'people': ['Andre Torres', 'You'],
+          },
+          {
+            'name': 'Communications',
+            'description': 'Total Count: 173',
+            'time': '',
+            'color': const Color(0xFFAA77FF),
+            'people': ['Freya Collins', 'You'],
+          },
+          {
+            'name': 'HR',
+            'description': 'Total Count: 1473',
+            'time': '',
+            'color': const Color(0xFFE9A8FF),
+            'people': ['You'],
+          },
+        ];
+      });
     }
   }
 
-  // Logout function
   Future<void> _logout() async {
     setState(() {
       _isLoading = true;
     });
 
     try {
-      await ApiService.logout(); // Your logout logic here
+      await ApiService.logout();
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (context) => const LoginScreen()),
@@ -113,43 +130,41 @@ class _QuickLaunchScreenState extends State<QuickLaunchScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : Column(
-        children: [
-          // User info and logout bar
-          _buildUserBar(context),
-
-          // Main content
-          Expanded(
-            child: Row(
               children: [
-                // Main content area
+                _buildUserBar(context),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Row(
                     children: [
-                      _buildHeader(context),
                       Expanded(
-                        child: ListView.builder(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                          itemCount: _departments.length, // Use the fetched data
-                          itemBuilder: (context, index) {
-                            final department = _departments[index];
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 16.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  DepartmentCard(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildHeader(context),
+                            Expanded(
+                                child: ListView.builder(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16.0, vertical: 8.0),
+                              itemCount: _departments.length,
+                              itemBuilder: (context, index) {
+                                _cardKeys[index] ??=
+                                    GlobalKey(); // Initialize key if null
+                                final department = _departments[index];
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 16.0),
+                                  child: DepartmentCard(
+                                    key: _cardKeys[index], // Assign the key
                                     name: department['name'] as String,
-                                    description: 'Total Count: ${department['order']}', // Example description
-                                    time: '', // You can replace with actual time if needed
-                                    color: Color(int.parse(department['color'].replaceAll('#', '0xff'))),
-                                    people: ['John Doe', 'Jane Smith'], // Example people, adjust based on your data
-                                    onTap: () => _handleDepartmentTap(context, department),
+                                    description:
+                                        'Total Count: ${department['order']}',
+                                    time: '',
+                                    color: department['color'],
+                                    people: ['John Doe', 'Jane Smith'],
+                                    onTap: () => _handleDepartmentTap(index),
                                   ),
-                                ],
-                              ),
-                            );
-                          },
+                                );
+                              },
+                            )),
+                          ],
                         ),
                       ),
                     ],
@@ -157,13 +172,9 @@ class _QuickLaunchScreenState extends State<QuickLaunchScreen> {
                 ),
               ],
             ),
-          ),
-        ],
-      ),
     );
   }
 
-  // User info and logout bar
   Widget _buildUserBar(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
@@ -184,7 +195,9 @@ class _QuickLaunchScreenState extends State<QuickLaunchScreen> {
             CircleAvatar(
               backgroundColor: Colors.white,
               child: Text(
-                _username?.isNotEmpty == true ? _username![0].toUpperCase() : 'U',
+                _username?.isNotEmpty == true
+                    ? _username![0].toUpperCase()
+                    : 'U',
                 style: const TextStyle(
                   color: Color(0xFF1E3A8A),
                   fontWeight: FontWeight.bold,
@@ -221,7 +234,6 @@ class _QuickLaunchScreenState extends State<QuickLaunchScreen> {
     );
   }
 
-  // Header Section
   Widget _buildHeader(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(24.0),
@@ -236,8 +248,8 @@ class _QuickLaunchScreenState extends State<QuickLaunchScreen> {
                 child: Text(
                   'Quick Launch',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
               ),
             ],
@@ -246,39 +258,49 @@ class _QuickLaunchScreenState extends State<QuickLaunchScreen> {
           Text(
             'Select a department to make a call',
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: Colors.grey[600],
-            ),
+                  color: Colors.grey[600],
+                ),
           ),
         ],
       ),
     );
   }
 
-  // Handle department tap
-  void _handleDepartmentTap(BuildContext context, Map<String, dynamic> department) {
-    // Show loading animation
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const LoadingAnimation(),
+  void _handleDepartmentTap(int index) {
+    final key = _cardKeys[index];
+    if (key?.currentContext == null) return;
+
+    final renderBox = key?.currentContext!.findRenderObject() as RenderBox;
+    final position = renderBox.localToGlobal(Offset.zero);
+    final size = renderBox.size;
+
+    // Calculate center position
+    final centerX = position.dx + size.width / 2;
+    final centerY = position.dy + size.height / 2;
+
+    final overlay = Overlay.of(context);
+    OverlayEntry? overlayEntry;
+    overlayEntry = OverlayEntry(
+      builder: (context) => RocketLaunchOverlay(
+        color: _departments[index]['color'],
+        position: Offset(centerX, centerY),
+        onAnimationComplete: () {
+          overlayEntry?.remove();
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => CallStatisticsDetailScreen(
+                departmentName: _departments[index]['name'],
+                succeeded: 1,
+                notSucceeded: 0,
+                notCalled: 0,
+              ),
+            ),
+          );
+        },
+      ),
     );
 
-    // Simulate loading time
-    Future.delayed(const Duration(seconds: 3), () {
-      Navigator.pop(context); // Close loading dialog
-
-      // Navigate to statistics screen
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => CallStatisticsDetailScreen(
-            departmentName: department['name'] as String,
-            succeeded: 1,
-            notSucceeded: 0,
-            notCalled: 0,
-          ),
-        ),
-      );
-    });
+    overlay.insert(overlayEntry);
   }
 }
