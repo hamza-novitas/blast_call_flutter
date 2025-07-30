@@ -1,476 +1,581 @@
+import 'dart:async';
+
+import 'package:blast_caller_app/models/enums/enums.dart';
+import 'package:blast_caller_app/services/notification_service.dart';
 import 'package:flutter/material.dart';
-// Import fl_chart but don't use the problematic features
-import 'package:fl_chart/fl_chart.dart';
 
-class CallStatisticsScreen extends StatelessWidget {
-  const CallStatisticsScreen({Key? key}) : super(key: key);
+class CallStatisticsScreen extends StatefulWidget {
+  // Optional: You can keep this if you want to pass initial data
+  final Map<String, int>? initialStats;
+  final int? notificationID;
 
-  @override
-  Widget build(BuildContext context) {
-    // Mock data for call statistics
-    final inProgressCalls = [
-      {
-        'id': '6140',
-        'name': '1 - مجموعة منصصة',
-        'launchDate': '2025-07-23 11:15 AM',
-        'succeeded': 1,
-        'notSucceeded': 1,
-        'notCalled': 0
-      },
-      {
-        'id': '6023',
-        'name': 'test',
-        'launchDate': '2025-04-24 04:23 PM',
-        'succeeded': 1,
-        'notSucceeded': 0,
-        'notCalled': 0
-      },
-    ];
-
-    return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.stacked_line_chart, color: Color(0xFF1A237E), size: 28),
-                const SizedBox(width: 8),
-                Text(
-                  'Call Statistics',
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            _buildStatusCards(context),
-            const SizedBox(height: 24),
-            Row(
-              children: [
-                const Icon(Icons.sync, color: Color(0xFF1A237E), size: 24),
-                const SizedBox(width: 8),
-                Text(
-                  'In Progress Calls',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: inProgressCalls.isEmpty
-                  ? const Center(
-                      child: Text('No calls in progress'),
-                    )
-                  : ListView.builder(
-                      itemCount: inProgressCalls.length,
-                      itemBuilder: (context, index) {
-                        final call = inProgressCalls[index];
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 16),
-                          elevation: 2,
-                          child: InkWell(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => CallStatisticsDetailScreen(
-                                    departmentName: call['name'] as String,
-                                    succeeded: call['succeeded'] as int,
-                                    notSucceeded: call['notSucceeded'] as int,
-                                    notCalled: call['notCalled'] as int,
-                                  ),
-                                ),
-                              );
-                            },
-                            child: Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              'ID: ${call['id']}',
-                                              style: const TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.grey,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 8),
-                                            Text(
-                                              call['name'] as String,
-                                              style: const TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 16,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 8),
-                                            Text(
-                                              'Launch Date: ${call['launchDate']}',
-                                              style: TextStyle(color: Colors.grey[600]),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      SizedBox(
-                                        width: 100,
-                                        height: 100,
-                                        child: _buildSimplePieChart(
-                                          succeeded: call['succeeded'] as int,
-                                          notSucceeded: call['notSucceeded'] as int,
-                                          notCalled: call['notCalled'] as int,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 16),
-                                  _buildCallStatistics(
-                                    succeeded: call['succeeded'] as int,
-                                    notSucceeded: call['notSucceeded'] as int,
-                                    notCalled: call['notCalled'] as int,
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.end,
-                                    children: [
-                                      const Text(
-                                        'Total',
-                                        style: TextStyle(fontWeight: FontWeight.bold),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                                        decoration: BoxDecoration(
-                                          color: Colors.blue,
-                                          borderRadius: BorderRadius.circular(16),
-                                        ),
-                                        child: Text(
-                                          '${(call['succeeded'] as int) + (call['notSucceeded'] as int) + (call['notCalled'] as int)}',
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 4),
-                                      const Text('Person'),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatusCards(BuildContext context) {
-    final statusData = [
-      {'title': 'Pending Approval', 'count': '2', 'color': Colors.amber},
-      {'title': 'Draft', 'count': '94', 'color': Colors.blue},
-      {'title': 'Ready To Launch', 'count': '22', 'color': Colors.blue},
-      {'title': 'Need Correction', 'count': '0', 'color': Colors.amber},
-    ];
-
-    return SizedBox(
-      height: 90,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: statusData.length,
-        itemBuilder: (context, index) {
-          final status = statusData[index];
-          return Container(
-            width: 140,
-            margin: const EdgeInsets.only(right: 12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  spreadRadius: 1,
-                  blurRadius: 2,
-                  offset: const Offset(0, 1),
-                ),
-              ],
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(12.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Text(
-                    status['title'] as String,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: status['color'] as Color,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      status['count'] as String,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildCallStatistics({
-    required int succeeded,
-    required int notSucceeded,
-    required int notCalled,
-  }) {
-    return Row(
-      children: [
-        _buildStatItem('Succeeded', succeeded, Colors.greenAccent.shade400),
-        const SizedBox(width: 16),
-        _buildStatItem('Not Succeeded', notSucceeded, Colors.pinkAccent.shade100),
-        const SizedBox(width: 16),
-        _buildStatItem('Not Called', notCalled, Colors.grey.shade400),
-      ],
-    );
-  }
-
-  Widget _buildStatItem(String label, int value, Color color) {
-    return Row(
-      children: [
-        Container(
-          width: 14,
-          height: 14,
-          color: color,
-        ),
-        const SizedBox(width: 4),
-        Text('$label : $value'),
-      ],
-    );
-  }
-
-  // Simple pie chart implementation that avoids the problematic MediaQuery.boldTextOverride
-  Widget _buildSimplePieChart({
-    required int succeeded,
-    required int notSucceeded,
-    required int notCalled,
-  }) {
-    final total = succeeded + notSucceeded + notCalled;
-    if (total == 0) {
-      return const Center(child: Text('No data'));
-    }
-
-    // Calculate segments
-    final double succeededAngle = 360 * (succeeded / total);
-    final double notSucceededAngle = 360 * (notSucceeded / total);
-    
-    return CustomPaint(
-      size: const Size(100, 100),
-      painter: SimpleChartPainter(
-        succeededPercentage: succeeded / total,
-        notSucceededPercentage: notSucceeded / total,
-        notCalledPercentage: notCalled / total,
-        succeededColor: Colors.greenAccent.shade400,
-        notSucceededColor: Colors.pinkAccent.shade100,
-        notCalledColor: Colors.grey.shade400,
-      ),
-    );
-  }
-}
-
-class SimpleChartPainter extends CustomPainter {
-  final double succeededPercentage;
-  final double notSucceededPercentage;
-  final double notCalledPercentage;
-  final Color succeededColor;
-  final Color notSucceededColor;
-  final Color notCalledColor;
-
-  SimpleChartPainter({
-    required this.succeededPercentage,
-    required this.notSucceededPercentage,
-    required this.notCalledPercentage,
-    required this.succeededColor,
-    required this.notSucceededColor,
-    required this.notCalledColor,
+  const CallStatisticsScreen({
+    super.key,
+    this.initialStats,
+    this.notificationID
   });
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final Paint paint = Paint()
-      ..style = PaintingStyle.fill;
+  State<CallStatisticsScreen> createState() => _CallStatisticsScreenState();
+}
 
-    final double radius = size.width / 2;
-    final Offset center = Offset(size.width / 2, size.height / 2);
-    
-    // Draw segments
-    if (succeededPercentage > 0) {
-      paint.color = succeededColor;
-      canvas.drawArc(
-        Rect.fromCircle(center: center, radius: radius),
-        0,
-        2 * 3.14159 * succeededPercentage,
-        true,
-        paint,
-      );
-    }
+class _CallStatisticsScreenState extends State<CallStatisticsScreen> {
+  late Map<String, int> stats;
+  bool isLoading = true;
+  String errorMessage = '';
+  late NotificationService notificationService;
+  Timer? _pollingTimer;
 
-    if (notSucceededPercentage > 0) {
-      paint.color = notSucceededColor;
-      canvas.drawArc(
-        Rect.fromCircle(center: center, radius: radius),
-        2 * 3.14159 * succeededPercentage,
-        2 * 3.14159 * notSucceededPercentage,
-        true,
-        paint,
-      );
-    }
-
-    if (notCalledPercentage > 0) {
-      paint.color = notCalledColor;
-      canvas.drawArc(
-        Rect.fromCircle(center: center, radius: radius),
-        2 * 3.14159 * (succeededPercentage + notSucceededPercentage),
-        2 * 3.14159 * notCalledPercentage,
-        true,
-        paint,
-      );
-    }
+  @override
+  void initState() {
+    super.initState();
+    _startPolling();
+    // Initialize with passed data or defaults
+    stats = widget.initialStats ?? {
+      'Succeeded': 0,
+      'No Answer': 0,
+      'Busy / Refused': 0,
+      'Wrong Pincode': 0,
+      'Not Confirmed': 0,
+      'Hanged Up': 0,
+      'Failed': 0,
+    };
+    runNotification();
+    // _fetchCallStatistics();
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
-}
+  void dispose() {
+    _pollingTimer?.cancel(); // Cancel timer when widget is disposed
+    super.dispose();
+  }
 
-class CallStatisticsDetailScreen extends StatelessWidget {
-  final String departmentName;
-  final int succeeded;
-  final int notSucceeded;
-  final int notCalled;
+  void _startPolling() {
+    // Set up periodic polling (every 5 seconds)
+    _pollingTimer = Timer.periodic(const Duration(seconds: 5), (timer) async {
+      try {
+        final statistics = await notificationService.fetchNotificationStatistics(widget.notificationID);
+        final rawData = statistics?["statusCounts"] ?? []; // Your raw List<dynamic>
+        final statusCounts = rawData
+            .map((item) => StatusCount.fromJson(item as Map<String, dynamic>))
+            .toList();
 
-  const CallStatisticsDetailScreen({
-    Key? key,
-    required this.departmentName,
-    required this.succeeded,
-    required this.notSucceeded,
-    required this.notCalled,
-  }) : super(key: key);
+        final success = statusCounts
+            .firstWhere(
+              (sc) => sc.status == TrackerStatus.succeeded,
+          orElse: () => StatusCount(status: TrackerStatus.succeeded, count: 0),
+        )
+            .count;
+        final noAnswer = statusCounts
+            .firstWhere(
+              (sc) => sc.status == TrackerStatus.noAnswer,
+          orElse: () => StatusCount(status: TrackerStatus.noAnswer, count: 0),
+        )
+            .count;
+        final busy = statusCounts
+            .firstWhere(
+              (sc) => sc.status == TrackerStatus.busy,
+          orElse: () => StatusCount(status: TrackerStatus.busy, count: 0),
+        )
+            .count;
+        final wrongPincode = statusCounts
+            .firstWhere(
+              (sc) => sc.status == TrackerStatus.wrongPincode,
+          orElse: () => StatusCount(status: TrackerStatus.wrongPincode, count: 0),
+        )
+            .count;
+        final notConfirmed = statusCounts
+            .firstWhere(
+              (sc) => sc.status == TrackerStatus.notConfirmed,
+          orElse: () => StatusCount(status: TrackerStatus.notConfirmed, count: 0),
+        )
+            .count;
+        final hangedUp = statusCounts
+            .firstWhere(
+              (sc) => sc.status == TrackerStatus.hangedUp,
+          orElse: () => StatusCount(status: TrackerStatus.hangedUp, count: 0),
+        )
+            .count;
+        final failed = statusCounts
+            .firstWhere(
+              (sc) => sc.status == TrackerStatus.failed,
+          orElse: () => StatusCount(status: TrackerStatus.failed, count: 0),
+        )
+            .count;
+
+        if (mounted) {
+          setState(() {
+            stats = {
+              'Succeeded': success,
+              'No Answer': noAnswer,
+              'Busy / Refused': busy,
+              'Wrong Pincode': wrongPincode,
+              'Not Confirmed': notConfirmed,
+              'Hanged Up': hangedUp,
+              'Failed': failed,
+            };
+          });
+        }
+      } catch (e) {
+        // Optional: show error to user or implement retry logic
+        if (e is TimeoutException) {
+        } else {
+        }
+      }
+    });
+  }
+
+  Future<void> runNotification()async{
+    notificationService = NotificationService();
+    await notificationService.runNotification(widget.notificationID);
+  }
 
   @override
   Widget build(BuildContext context) {
-    final total = succeeded + notSucceeded + notCalled;
+    // Initialize with default values if empty
+    // final defaultStats = {
+    //   'Succeeded': 0,
+    //   'No Answer': 0,
+    //   'Busy / Refused': 0,
+    //   'Wrong Pincode': 0,
+    //   'Not Confirmed': 0,
+    //   'Hanged Up': 0,
+    //   'Failed': 0,
+    // };
+
+    // Merge with provided stats
+    final effectiveStats = {...stats};
+
+    final total = effectiveStats.values.reduce((a, b) => a + b);
+    final succeeded = effectiveStats['Succeeded'] ?? 0;
+    final notSucceeded = total - succeeded;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Call Details', style: TextStyle(color: Colors.white)),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.of(context).pop(),
+        title: const Text('Call Statistics'),
+        centerTitle: true,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            _buildHeader(context),
+            const SizedBox(height: 24),
+            _buildKeyMetrics(succeeded, notSucceeded, context),
+            const SizedBox(height: 24),
+            _buildVisualizationCard(effectiveStats, context),
+            const SizedBox(height: 24),
+            _buildDataTableCard(effectiveStats, context),
+            const SizedBox(height: 24),
+            _buildTotalSummary(total, context),
+          ],
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              departmentName,
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Launch Date: ${DateTime.now().toString().substring(0, 16)}',
-              style: TextStyle(color: Colors.grey.shade700, fontSize: 14),
-            ),
-            const SizedBox(height: 40),
-            Center(
-              child: SizedBox(
-                height: 200,
-                width: 200,
-                child: CustomPaint(
-                  size: const Size(200, 200),
-                  painter: SimpleChartPainter(
-                    succeededPercentage: succeeded / total,
-                    notSucceededPercentage: notSucceeded / total,
-                    notCalledPercentage: notCalled / total,
-                    succeededColor: Colors.greenAccent.shade400,
-                    notSucceededColor: Colors.pinkAccent.shade100,
-                    notCalledColor: Colors.grey.shade400,
-                  ),
-                ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    final theme = Theme.of(context);
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 600),
+      child: Row(
+        children: [
+          Icon(Icons.analytics_outlined, size: 32, color: theme.primaryColor),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'Call Performance',
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: theme.primaryColor,
               ),
             ),
-            const SizedBox(height: 40),
-            _buildStatisticsList(),
-            const Spacer(),
-            Center(
-              child: Row(
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildKeyMetrics(int succeeded, int notSucceeded, BuildContext context) {
+    final theme = Theme.of(context);
+
+    // Sample additional metrics
+    final additionalMetrics = [/**/
+      {
+        'title': 'Wrong Pincode',
+        'value': stats['Wrong Pincode'] ?? 0,  // Use actual stat value
+        'color': Colors.amber,                 // More appropriate color
+        'icon': Icons.lock_outline,            // Better matching icon
+      },
+      {
+        'title': 'Not Confirmed',
+        'value': stats['Not Confirmed'] ?? 0,
+        'color': Colors.purple,
+        'icon': Icons.schedule_outlined,       // For pending confirmation
+      },
+      {
+        'title': 'Hanged Up',
+        'value': stats['Hanged Up'] ?? 0,
+        'color': Colors.redAccent,             // More visible for important status
+        'icon': Icons.phone_callback_outlined, // Better call-related icon
+      },
+      {
+        'title': 'Failed',
+        'value': stats['Failed'] ?? 0,
+        'color': Colors.red,                   // Standard error color
+        'icon': Icons.error_outlined,          // Standard error icon
+      },
+    ];
+
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 600),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Row(
+            children: [
+              // Original metrics
+              _buildMetricCard(
+                  'Succeeded',
+                  stats['Succeeded']?.toInt() ?? 0,
+                  Colors.green,
+                  Icons.check_circle_outline,
+                  theme
+              ),
+              const SizedBox(width: 12),
+              _buildMetricCard(
+                  'No Answer',
+                  stats['No Answer']?.toInt() ?? 0,
+                  Colors.orange,
+                  Icons.warning_amber_outlined,
+                  theme
+              ),
+              const SizedBox(width: 12),
+              _buildMetricCard(
+                  'Busy / Refused',
+                  stats['Busy / Refused']?.toInt() ?? 0,
+                  Colors.grey,
+                  Icons.phone_disabled_outlined,
+                  theme
+              ),
+
+              // Additional metrics
+              ...additionalMetrics.map((metric) => Padding(
+                padding: const EdgeInsets.only(left: 12),
+                child: _buildMetricCard(
+                    metric['title'] as String,
+                    metric['value'] as int,
+                    metric['color'] as Color,
+                    metric['icon'] as IconData,
+                    theme
+                ),
+              )),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMetricCard(
+      String title,
+      int value,
+      Color color,
+      IconData icon,
+      ThemeData theme
+      ) {
+    return SizedBox(
+      width: 140, // Increased width to accommodate longer text
+      child: Card(
+        elevation: 1,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Icon and Title - now in a column to prevent overflow
+              Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text(
-                    'Total',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                    padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color: Colors.blue,
-                      borderRadius: BorderRadius.circular(20),
+                      color: color.withOpacity(0.1),
+                      shape: BoxShape.circle,
                     ),
-                    child: Text(
-                      '$total',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                    ),
+                    child: Icon(icon, size: 20, color: color),
                   ),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'Person',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: Text(
+                      title,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 2, // Allow text to wrap to second line if needed
+                      overflow: TextOverflow.visible,
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: 12),
+              // Value - now with more space
+              Text(
+                value.toString(),
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVisualizationCard(Map<String, int> stats, BuildContext context) {
+    final theme = Theme.of(context);
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 600),
+      child: Card(
+        elevation: 1,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Call Distribution',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                height: 200,
+                child: _buildCallDistributionChart(stats),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCallDistributionChart(Map<String, int> stats) {
+    final maxValue = stats.values.reduce((a, b) => a > b ? a : b);
+    final items = stats.entries.toList();
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Padding(
+          padding: const EdgeInsets.only(top: 16),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: items.map((item) {
+              final heightFactor = maxValue == 0 ? 0.0 : item.value / maxValue.toDouble();
+              return Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Tooltip(
+                      message: '${item.key}: ${item.value}',
+                      child: Container(
+                        height: 160 * heightFactor,
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              _statusColor(item.key).withOpacity(0.8),
+                              _statusColor(item.key),
+                            ],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                          ),
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(6),
+                          ),
+                        ),
+                        child: Center(
+                          child: Text(
+                            item.value > 0 ? '${item.value}' : '',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      _statusLabel(item.key),
+                      style: const TextStyle(
+                        fontSize: 10,
+                        color: Colors.grey,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildDataTableCard(Map<String, int> stats, BuildContext context) {
+    final theme = Theme.of(context);
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 600),
+      child: Card(
+        elevation: 1,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Detailed Statistics',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: _buildStatisticsTable(stats, theme),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatisticsTable(Map<String, int> stats, ThemeData theme) {
+    return Table(
+      defaultColumnWidth: const FixedColumnWidth(100),
+      border: TableBorder(
+        horizontalInside: BorderSide(
+          color: theme.dividerColor.withOpacity(0.5),
+          width: 1,
+        ),
+      ),
+      children: [
+        TableRow(
+          decoration: BoxDecoration(
+            color: theme.primaryColor.withOpacity(0.05),
+          ),
+          children: [
+            _buildTableHeaderCell('#', theme),
+            _buildTableHeaderCell('Successful', theme),
+            _buildTableHeaderCell('No Answer', theme),
+            _buildTableHeaderCell('Busy/Refused', theme),
+            _buildTableHeaderCell('Wrong Pin', theme),
+            _buildTableHeaderCell('Not Confirmed', theme),
+            _buildTableHeaderCell('Hanged Up', theme),
+            _buildTableHeaderCell('Failed', theme),
+          ],
+        ),
+        TableRow(
+          children: [
+            _buildTableCell('1', theme),
+            _buildTableCell('${stats['Succeeded']}', theme),
+            _buildTableCell('${stats['No Answer']}', theme),
+            _buildTableCell('${stats['Busy / Refused']}', theme),
+            _buildTableCell('${stats['Wrong Pincode']}', theme),
+            _buildTableCell('${stats['Not Confirmed']}', theme),
+            _buildTableCell('${stats['Hanged Up']}', theme),
+            _buildTableCell('${stats['Failed']}', theme),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTableHeaderCell(String text, ThemeData theme) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+      child: Text(
+        text,
+        style: theme.textTheme.bodySmall?.copyWith(
+          fontWeight: FontWeight.bold,
+          color: theme.colorScheme.onSurface.withOpacity(0.7),
+        ),
+        textAlign: TextAlign.center,
+      ),
+    );
+  }
+
+  Widget _buildTableCell(String text, ThemeData theme) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+      child: Text(
+        text,
+        style: theme.textTheme.bodyMedium,
+        textAlign: TextAlign.center,
+      ),
+    );
+  }
+
+  Widget _buildTotalSummary(int total, BuildContext context) {
+    final theme = Theme.of(context);
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 600),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+        decoration: BoxDecoration(
+          color: theme.primaryColor.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: theme.primaryColor.withOpacity(0.2),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'Total Calls: ',
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: theme.primaryColor,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                color: theme.primaryColor,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Text(
+                '$total',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  color: theme.colorScheme.onPrimary,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ],
@@ -479,35 +584,27 @@ class CallStatisticsDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildStatisticsList() {
-    return Column(
-      children: [
-        _buildStatItem('Succeeded', succeeded, Colors.greenAccent.shade400),
-        const SizedBox(height: 16),
-        _buildStatItem('Not Succeeded', notSucceeded, Colors.pinkAccent.shade100),
-        const SizedBox(height: 16),
-        _buildStatItem('Not Called', notCalled, Colors.grey.shade400),
-      ],
-    );
+  Color _statusColor(String status) {
+    switch (status) {
+      case 'Succeeded': return Colors.green;
+      case 'No Answer': return Colors.grey;
+      case 'Busy / Refused': return Colors.orange;
+      case 'Wrong Pincode': return Colors.amber;
+      case 'Not Confirmed': return Colors.brown;
+      case 'Hanged Up': return Colors.pink;
+      case 'Failed': return Colors.red;
+      default: return Colors.blue;
+    }
   }
 
-  Widget _buildStatItem(String label, int value, Color color) {
-    return Row(
-      children: [
-        Container(
-          width: 20,
-          height: 20,
-          color: color,
-        ),
-        const SizedBox(width: 12),
-        Text(
-          '$label : $value',
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
+  String _statusLabel(String label) {
+    switch (label) {
+      case 'Succeeded': return 'Success';
+      case 'Busy / Refused': return 'Busy';
+      case 'Wrong Pincode': return 'Pin';
+      case 'Not Confirmed': return 'Not Conf';
+      case 'Hanged Up': return 'Hung';
+      default: return label.length > 8 ? label.substring(0, 7) : label;
+    }
   }
 }

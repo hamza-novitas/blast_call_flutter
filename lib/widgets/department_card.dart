@@ -1,8 +1,11 @@
+import 'package:blast_caller_app/widgets/launch_confirmation_dialog.dart';
 import 'package:flutter/material.dart';
 
 class DepartmentCard extends StatelessWidget {
   final String name;
   final String description;
+  final String totalPeople;
+  final String onVacationCount;
   final String time;
   final Color color;
   final List<String> people;
@@ -12,6 +15,8 @@ class DepartmentCard extends StatelessWidget {
     Key? key,
     required this.name,
     required this.description,
+    required this.totalPeople,
+    required this.onVacationCount,
     required this.time,
     required this.color,
     required this.people,
@@ -21,7 +26,7 @@ class DepartmentCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      // onTap: onTap,
       child: Container(
         width: double.infinity,
         decoration: BoxDecoration(
@@ -87,16 +92,21 @@ class DepartmentCard extends StatelessWidget {
                     Expanded(
                       child: TextButton(
                         onPressed: () {
+                          showLaunchConfirmationDialog(context, () {
+                            // 🔥 Your launch logic goes here
+                            print('TEST 🚀 Notification launched!');
+                            onTap();
+                          });
                           // TODO: Handle Action 1
                           print('Action 1 pressed TEST');
                         },
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
-                          children: const [
+                          children: [
                             Icon(Icons.group, color: Colors.white),
                             SizedBox(width: 8),
                             Text(
-                              '0',
+                              totalPeople,
                               style: TextStyle(color: Colors.white),
                             ),
                           ],
@@ -116,11 +126,11 @@ class DepartmentCard extends StatelessWidget {
                         },
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
-                          children: const [
+                          children: [
                             Icon(Icons.beach_access, color: Colors.white),
                             SizedBox(width: 8),
                             Text(
-                              '0',
+                              onVacationCount,
                               style: TextStyle(color: Colors.white),
                             ),
                           ],
@@ -131,11 +141,11 @@ class DepartmentCard extends StatelessWidget {
                 ),
               ),
 
-              // People section (if present)
-              if (people.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                _buildPeopleSection(),
-              ],
+              // // People section (if present)
+              // if (people.isNotEmpty) ...[
+              //   const SizedBox(height: 12),
+              //   _buildPeopleSection(),
+              // ],
             ],
           ),
         ),

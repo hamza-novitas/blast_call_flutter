@@ -138,7 +138,7 @@ class _RocketLaunchOverlayState extends State<RocketLaunchOverlay>
                           'assets/animations/rocket_launch_improved.json',
                           controller: _controller,
                           onLoaded: (composition) {
-                            _controller.duration = composition.duration;
+                            _controller.duration = composition.duration *0.35;
                             _controller.forward(from: 0).whenComplete(() {
                               widget.onAnimationComplete();
                             });
