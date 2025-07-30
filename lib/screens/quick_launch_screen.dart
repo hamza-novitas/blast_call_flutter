@@ -37,10 +37,26 @@ class _QuickLaunchScreenState extends State<QuickLaunchScreen> {
 
       if (response['departments'].length > 0) {
         List<dynamic> departmentsData = response['departments'];
+        List<dynamic> quickLaunchDepartments = departmentsData
+            .where((department) => department['isQuickLaunch'] == true)
+            .toList();
+        List<int> departmentIDs = quickLaunchDepartments
+            .map((department) => department['departmentID'] as int)
+            .toList();
+        final departmentEmpCount = await ApiService.postData(
+            "department/departmentpeoplecount", {departmentIDs});
+        print("departmentEmpCount ${departmentEmpCount}");
+
         setState(() {
-          _departments = departmentsData
-              .where((department) => department['isQuickLaunch'] == true)
-              .map((department) {
+          _departments = quickLaunchDepartments.map((department) {
+            final departmentID = department['departmentID'];
+
+            // Find matching department count from the response
+            final departmentCount =
+                (departmentEmpCount as List<dynamic>).firstWhere(
+              (d) => d['departmentId'] == departmentID,
+              orElse: () => {}, // fallback if not found
+            );
             return {
               'departmentID': department['departmentID'],
               'clientID': department['clientID'],
@@ -52,6 +68,8 @@ class _QuickLaunchScreenState extends State<QuickLaunchScreen> {
               'color': department['color'],
               'isQuickLaunch': department['isQuickLaunch'],
               'order': department['order'],
+              'totalPeople': departmentCount['totalPeople'] ?? 0,
+              'onVacationCount': departmentCount['onVacationCount'] ?? 0,
             };
           }).toList()
             ..sort((a, b) => (a['order'] as int).compareTo(b['order'] as int));
@@ -67,38 +85,38 @@ class _QuickLaunchScreenState extends State<QuickLaunchScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Failed to load data')),
       );
-      // this.setState(() {
-      //   _departments = [
-      //     {
-      //       'name': 'All Employees',
-      //       'description': 'Total Count: 5360',
-      //       'time': '',
-      //       'color': const Color(0xFF47B5FF),
-      //       'people': ['Andre Torres', 'Edouard Dufils', 'Sophie Wang Yu'],
-      //     },
-      //     {
-      //       'name': 'IT',
-      //       'description': 'Total Count: 347',
-      //       'time': '',
-      //       'color': const Color(0xFFFFA500),
-      //       'people': ['Andre Torres', 'You'],
-      //     },
-      //     {
-      //       'name': 'Communications',
-      //       'description': 'Total Count: 173',
-      //       'time': '',
-      //       'color': const Color(0xFFAA77FF),
-      //       'people': ['Freya Collins', 'You'],
-      //     },
-      //     {
-      //       'name': 'HR',
-      //       'description': 'Total Count: 1473',
-      //       'time': '',
-      //       'color': const Color(0xFFE9A8FF),
-      //       'people': ['You'],
-      //     },
-      //   ];
-      // });
+      this.setState(() {
+        _departments = [
+          {
+            'name': 'All Employees',
+            'description': 'Total Count: 5360',
+            'time': '',
+            'color': const Color(0xFF47B5FF),
+            'people': ['Andre Torres', 'Edouard Dufils', 'Sophie Wang Yu'],
+          },
+          {
+            'name': 'IT',
+            'description': 'Total Count: 347',
+            'time': '',
+            'color': const Color(0xFFFFA500),
+            'people': ['Andre Torres', 'You'],
+          },
+          {
+            'name': 'Communications',
+            'description': 'Total Count: 173',
+            'time': '',
+            'color': const Color(0xFFAA77FF),
+            'people': ['Freya Collins', 'You'],
+          },
+          {
+            'name': 'HR',
+            'description': 'Total Count: 1473',
+            'time': '',
+            'color': const Color(0xFFE9A8FF),
+            'people': ['You'],
+          },
+        ];
+      });
     }
   }
 
@@ -155,10 +173,11 @@ class _QuickLaunchScreenState extends State<QuickLaunchScreen> {
                                   child: DepartmentCard(
                                     key: _cardKeys[index], // Assign the key
                                     name: department['name'] as String,
-                                    description:
-                                        '',
+                                    description: '',
                                     time: '',
-                                    color: Color(int.parse(department['color'].replaceAll('#', '0xff'))),
+                                    // color: Color(int.parse(department['color']
+                                    //     .replaceAll('#', '0xff'))),
+                                    color: department['color'],
                                     people: ['John Doe', 'Jane Smith'],
                                     onTap: () => _handleDepartmentTap(index),
                                   ),
@@ -283,7 +302,8 @@ class _QuickLaunchScreenState extends State<QuickLaunchScreen> {
     OverlayEntry? overlayEntry;
     overlayEntry = OverlayEntry(
       builder: (context) => RocketLaunchOverlay(
-        color: Color(int.parse(_departments[index]['color'].replaceAll('#', '0xff'))),
+        color: Color(
+            int.parse(_departments[index]['color'].replaceAll('#', '0xff'))),
         position: Offset(centerX, centerY),
         onAnimationComplete: () {
           // overlayEntry?.remove();
