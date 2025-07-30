@@ -90,9 +90,16 @@ class DepartmentCard extends StatelessWidget {
                           // TODO: Handle Action 1
                           print('Action 1 pressed TEST');
                         },
-                        child: const Text(
-                          'Action 1',
-                          style: TextStyle(color: Colors.white),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: const [
+                            Icon(Icons.group, color: Colors.white),
+                            SizedBox(width: 8),
+                            Text(
+                              '0',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -107,9 +114,16 @@ class DepartmentCard extends StatelessWidget {
                           // TODO: Handle Action 2
                           print('Action 2 pressed TEST');
                         },
-                        child: const Text(
-                          'Action 2',
-                          style: TextStyle(color: Colors.white),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: const [
+                            Icon(Icons.beach_access, color: Colors.white),
+                            SizedBox(width: 8),
+                            Text(
+                              '0',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -124,7 +138,6 @@ class DepartmentCard extends StatelessWidget {
               ],
             ],
           ),
-
         ),
       ),
     );
