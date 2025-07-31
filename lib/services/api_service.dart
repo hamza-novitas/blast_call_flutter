@@ -37,7 +37,8 @@ class ApiService {
         // Store auth token securely
         await storage.write(key: 'auth_token', value: data["token"]);
         await storage.write(key: 'username', value: data["userName"]);
-        await storage.write(key: 'roles', value: jsonEncode(data["bcUserRoles"]));
+        await storage.write(
+            key: 'roles', value: jsonEncode(data["bcUserRoles"]));
       } else {
         throw Exception('Login failed: ${response.statusCode}');
       }
@@ -106,8 +107,7 @@ class ApiService {
     }
   }
 
-  static Future<dynamic> postData(
-      String endpoint, dynamic payload) async {
+  static Future<dynamic> postData(String endpoint, dynamic payload) async {
     try {
       final token = await storage.read(key: 'auth_token');
 

@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:blast_caller_app/models/enums/enums.dart';
 import 'package:blast_caller_app/models/notification.dart';
+import 'package:blast_caller_app/screens/active_calls.dart';
 import 'package:blast_caller_app/services/notification_service.dart';
 import 'package:blast_caller_app/widgets/rocket_launch_overlay.dart';
 import 'package:flutter/material.dart';
@@ -22,6 +23,7 @@ class _QuickLaunchScreenState extends State<QuickLaunchScreen> {
   final Map<int, GlobalKey> _cardKeys = {}; // Track keys for each card
   String? _username;
   bool _isLoading = true;
+  int _currentIndex = 0;
   List<Map<String, dynamic>> _departments = [];
   dynamic notificationFiles = [];
   static const FlutterSecureStorage storage = FlutterSecureStorage();
@@ -93,43 +95,44 @@ class _QuickLaunchScreenState extends State<QuickLaunchScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Failed to load data')),
       );
-      // this.setState(() {
-      //   _departments = [
-      //     {
-      //       'name': 'All Employees',
-      //       'description': 'Total Count: 5360',
-      //       'time': '',
-      //       'color': const Color(0xFF47B5FF),
-      //       'people': ['Andre Torres', 'Edouard Dufils', 'Sophie Wang Yu'],
-      //     },
-      //     {
-      //       'name': 'IT',
-      //       'description': 'Total Count: 347',
-      //       'time': '',
-      //       'color': const Color(0xFFFFA500),
-      //       'people': ['Andre Torres', 'You'],
-      //     },
-      //     {
-      //       'name': 'Communications',
-      //       'description': 'Total Count: 173',
-      //       'time': '',
-      //       'color': const Color(0xFFAA77FF),
-      //       'people': ['Freya Collins', 'You'],
-      //     },
-      //     {
-      //       'name': 'HR',
-      //       'description': 'Total Count: 1473',
-      //       'time': '',
-      //       'color': const Color(0xFFE9A8FF),
-      //       'people': ['You'],
-      //     },
-      //   ];
-      // });
+      this.setState(() {
+        _departments = [
+          {
+            'name': 'All Employees',
+            'description': 'Total Count: 5360',
+            'time': '',
+            'color': const Color(0xFF47B5FF),
+            'people': ['Andre Torres', 'Edouard Dufils', 'Sophie Wang Yu'],
+          },
+          {
+            'name': 'IT',
+            'description': 'Total Count: 347',
+            'time': '',
+            'color': const Color(0xFFFFA500),
+            'people': ['Andre Torres', 'You'],
+          },
+          {
+            'name': 'Communications',
+            'description': 'Total Count: 173',
+            'time': '',
+            'color': const Color(0xFFAA77FF),
+            'people': ['Freya Collins', 'You'],
+          },
+          {
+            'name': 'HR',
+            'description': 'Total Count: 1473',
+            'time': '',
+            'color': const Color(0xFFE9A8FF),
+            'people': ['You'],
+          },
+        ];
+      });
     }
   }
 
   Future<void> loadAudioFiles() async {
-    final validSoundFileTypes = SoundFileType.values.map((e) => e.value).toSet();
+    final validSoundFileTypes =
+        SoundFileType.values.map((e) => e.value).toSet();
 
     try {
       final notificationService = NotificationService();
@@ -150,7 +153,7 @@ class _QuickLaunchScreenState extends State<QuickLaunchScreen> {
           Map<String, dynamic>? defaultFile;
           try {
             defaultFile = fileArray.firstWhere(
-                  (f) => (f['isDefault'] ?? false) == true,
+              (f) => (f['isDefault'] ?? false) == true,
             ) as Map<String, dynamic>?;
           } catch (e) {
             defaultFile = null;
@@ -162,7 +165,6 @@ class _QuickLaunchScreenState extends State<QuickLaunchScreen> {
       }
 
       notificationFiles = resultFileIDs; // Your class variable
-
     } catch (e, stacktrace) {
       print('Error loading audio files: $e');
       print(stacktrace);
@@ -195,6 +197,28 @@ class _QuickLaunchScreenState extends State<QuickLaunchScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      body: _currentIndex == 0
+          ? _buildQuickLaunchContent(context)
+          : ActiveCallsScreen(),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: (index) => setState(() => _currentIndex = index),
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.rocket_launch),
+            label: 'Quick Launch',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.pie_chart),
+            label: 'Statistics',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickLaunchContent(BuildContext context) {
+    return Scaffold(
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : Column(
@@ -224,11 +248,14 @@ class _QuickLaunchScreenState extends State<QuickLaunchScreen> {
                                     name: department['name'] as String,
                                     description: '',
                                     time: '',
-                                    totalPeople: department['totalPeople'].toString(),
-                                    onVacationCount: department['onVacationCount'].toString(),
-                                    color: Color(int.parse(department['color']
-                                        .replaceAll('#', '0xff'))),
-                                    //color: department['color'],
+                                    totalPeople:
+                                        department['totalPeople'].toString(),
+                                    onVacationCount:
+                                        department['onVacationCount']
+                                            .toString(),
+                                    // color: Color(int.parse(department['color']
+                                    //     .replaceAll('#', '0xff'))),
+                                    color: department['color'],
                                     people: ['John Doe', 'Jane Smith'],
                                     onTap: () => _handleDepartmentTap(index),
                                   ),
@@ -337,12 +364,13 @@ class _QuickLaunchScreenState extends State<QuickLaunchScreen> {
     );
   }
 
-  void _handleDepartmentTap(int index) async{
+  void _handleDepartmentTap(int index) async {
     final key = _cardKeys[index];
     if (key?.currentContext == null) return;
 //department['departmentID']\
 
-    var notificationID = await handleDepartmentTap(_departments[index]['name'], _departments[index]['departmentID']);
+    // var notificationID = await handleDepartmentTap(
+    //     _departments[index]['name'], _departments[index]['departmentID']);
 
     final renderBox = key?.currentContext!.findRenderObject() as RenderBox;
     final position = renderBox.localToGlobal(Offset.zero);
@@ -356,39 +384,39 @@ class _QuickLaunchScreenState extends State<QuickLaunchScreen> {
     OverlayEntry? overlayEntry;
     overlayEntry = OverlayEntry(
       builder: (context) => RocketLaunchOverlay(
-        color: Color(
-            int.parse(_departments[index]['color'].replaceAll('#', '0xff'))),
+        // color: Color(
+        //     int.parse(_departments[index]['color'].replaceAll('#', '0xff'))),
+        color: _departments[index]['color'],
         position: Offset(centerX, centerY),
         onAnimationComplete: () async {
           // overlayEntry?.remove();
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => CallStatisticsScreen(
-                initialStats: {
-                  'Succeeded': 0,
-                  'No Answer': 0,
-                  'Busy / Refused': 0,
-                  'Wrong Pincode': 0,
-                  'Not Confirmed': 0,
-                  'Hanged Up': 0,
-                  'Failed': 0,
-                },
-                  notificationID: notificationID
-              ),
-            ),
-          );
+          // Navigator.push(
+          //   context,
+          //   MaterialPageRoute(
+          //     builder: (context) => CallStatisticsScreen(initialStats: {
+          //       'Succeeded': 0,
+          //       'No Answer': 0,
+          //       'Busy / Refused': 0,
+          //       'Wrong Pincode': 0,
+          //       'Not Confirmed': 0,
+          //       'Hanged Up': 0,
+          //       'Failed': 0,
+          //     }, notificationID: notificationID),
+          //   ),
+          // );
         },
       ),
     );
     overlay.insert(overlayEntry);
   }
 
-  Future<int?> handleDepartmentTap(String departmentName, int departmentID, {bool inVacation = false}
-  // <String, dynamic> department, {bool inVacation = false}
-  ) async {
+  Future<int?> handleDepartmentTap(String departmentName, int departmentID,
+      {bool inVacation = false}
+      // <String, dynamic> department, {bool inVacation = false}
+      ) async {
     final now = DateTime.now();
-    final formattedDate = '${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year}';
+    final formattedDate =
+        '${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year}';
 
     try {
       final notificationService = NotificationService();
@@ -398,7 +426,8 @@ class _QuickLaunchScreenState extends State<QuickLaunchScreen> {
       final roles = jsonDecode(rolesJson);
 
       // Now check if the user is an Officer
-      final bool isLoggedInUserAnOfficer = roles.any((r) => r['role']['name'] == 'Officer');
+      final bool isLoggedInUserAnOfficer =
+          roles.any((r) => r['role']['name'] == 'Officer');
 
       if (!isLoggedInUserAnOfficer) return null;
       var notification = NotificationModel();
@@ -406,22 +435,27 @@ class _QuickLaunchScreenState extends State<QuickLaunchScreen> {
       notification
         ..officerID = roles[0]['bcUserID']
         ..savingStep = 1
-        ..status = NotificationStatus.draft.value  // 'status' in your model is int?, so 'Draft' string will cause a problem
+        ..status = NotificationStatus.draft
+            .value // 'status' in your model is int?, so 'Draft' string will cause a problem
         ..name = "$departmentName $formattedDate"
         ..expirationPeriod = 6
-        ..scheduledLaunchDate = ''  // null is String? in model, so use empty string or adapt model
+        ..scheduledLaunchDate =
+            '' // null is String? in model, so use empty string or adapt model
         ..delayAmplifier = 0;
 
-      final savedNotification = await notificationService.saveNotification(notification);
+      final savedNotification =
+          await notificationService.saveNotification(notification);
 
-      if (savedNotification != null && savedNotification['notificationID'] != null) {
+      if (savedNotification != null &&
+          savedNotification['notificationID'] != null) {
         final filter = {
           'rank': MilRankHelper.allRanks,
           'gender': 1,
           'departmentIDs': [departmentID],
           'inVacation': inVacation,
         };
-        final recipients = await notificationService.addNotificationRecipientsByFilter(
+        final recipients =
+            await notificationService.addNotificationRecipientsByFilter(
           savedNotification['notificationID'],
           filter,
         );
@@ -443,19 +477,23 @@ class _QuickLaunchScreenState extends State<QuickLaunchScreen> {
         };
 
         await notificationService.updateNotification(notificationConfig, 4);
-        await notificationService.addNotificationFiles(savedNotification['notificationID'], notificationFiles); // Define _notificationFiles
-        await notificationService.updateNotificationStatus(savedNotification['notificationID'], NotificationStatus.readyToLaunch.value);
+        await notificationService.addNotificationFiles(
+            savedNotification['notificationID'],
+            notificationFiles); // Define _notificationFiles
+        await notificationService.updateNotificationStatus(
+            savedNotification['notificationID'],
+            NotificationStatus.readyToLaunch.value);
         return savedNotification['notificationID'];
-    //
-    //     setState(() {
-    //       _isLoading = false;
-    //     });
-    //
-    //     Navigator.pushNamed(
-    //       context,
-    //       '/call/${savedNotification['notificationID']}',
-    //       arguments: {'success': true},
-    //     );
+        //
+        //     setState(() {
+        //       _isLoading = false;
+        //     });
+        //
+        //     Navigator.pushNamed(
+        //       context,
+        //       '/call/${savedNotification['notificationID']}',
+        //       arguments: {'success': true},
+        //     );
       }
     } catch (e) {
       return null;
